@@ -156,7 +156,7 @@
             ],
             "startAutomatically": true,
             "rootFolder": "${workspaceFolder}",
-            "load": "z80-sample-program.nex"
+            "load": "hello.sna"
         }
 
     ]

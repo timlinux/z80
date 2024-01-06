@@ -48,6 +48,23 @@ Terminal ➡️ Run Build Task (Crtl+Shift+B)
 
 The program will be compiled and ``hello.sna`` will be generated.
 
+Next do
+
+Terminal ➡️ Run Task...
+
+And choose the ``zesarux --noconfigfile ...`` task
+
+![Run task](img/run-task.png)
+
+
+That will open the emulator in debug mode:
+
+![Run task](img/zesarux.png)
+
+
+
+
+Then select 
 
 ## Credits
 
