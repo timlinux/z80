@@ -5,6 +5,6 @@
 		"maziac.hex-hover-converter",
 		"maziac.z80-instruction-set",
 		"maziac.sna-fileviewer",
-		"maziac.nex-fileviewer",
+		"Imanolea.z80-asm"
 	]
 }

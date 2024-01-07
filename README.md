@@ -29,7 +29,7 @@ There are basically 3 different ZXSpectrum emulators you can use:
 
 * internal - which is bundled with DeZog but is not a fully compliant implementation
 * zesarux - which is bundled in this nix shell environment
-* cspect - I've never tried to use that.
+* cspect - I've never tried to use that -  and there is no nix package for it.
 
 To run the hello example here do the following:
 
@@ -40,7 +40,18 @@ code .
 This will open VSCode using the version installed in this nix shell, with 
 this folder opened and ready to use.
 
-In VSCode you need to install the extensions listed in the DeZog home page.
+In VSCode you need to install the extensions listed in the DeZog home page. These are the ones I finally ended up with:
+
+* [ASM Code Lens](https://marketplace.visualstudio.com/items?itemName=maziac.asm-code-lens)
+* [DeZog](https://marketplace.visualstudio.com/items?itemName=maziac.dezog)
+* [Hex Hover Converter](https://marketplace.visualstudio.com/items?itemName=maziac.hex-hover-converter)
+* [SNA File Viewer](https://marketplace.visualstudio.com/items?itemName=maziac.sna-fileviewer)
+* [Z80 Assembly](https://marketplace.visualstudio.com/items?itemName=Imanolea.z80-asm)
+* [Z80 Instruction Set](https://marketplace.visualstudio.com/items?itemName=maziac.z80-instruction-set)
+
+📒 These are listed in .vscode/extensions.json so you should be prompted to install them when you open this project in VSCode.
+
+
 
 Then do:
 
