@@ -64,8 +64,13 @@ That will open the emulator in debug mode:
 
 
 
-Then select 
+## Resources
 
+* [Z80 Mnemonics](http://www.z80.info/z80syntx.htm) : A list of all instructions / mnemonics, with descriptions.
+* [ZX Spectrum Character Set](https://worldofspectrum.net/ZXBasicManual/zxmanappa.html)
+* [ZX Spectrum Manual](http://www.retro8bitcomputers.co.uk/Content/downloads/manuals/ZX-Spectrum-48K-Manual.pdf)
+* [ZX Spectrum ROM Subroutines](https://skoolkid.github.io/rom/maps/routines.html)
+* [ZX Spectrum Assembler Programming Tutorial Series](https://www.youtube.com/playlist?list=PLO_DS4Ra9jOooo0tFaLq-BXa24iPWkJJ7) : A really nice, slow paced and clear  step by step walk through of proamming the Spectrum Z80 in Assembly Language.
 ## Credits
 
 Example code copied from DeZog then modified by Tim.
