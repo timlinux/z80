@@ -82,6 +82,8 @@ That will open the emulator in debug mode:
 * [ZX Spectrum Manual](http://www.retro8bitcomputers.co.uk/Content/downloads/manuals/ZX-Spectrum-48K-Manual.pdf)
 * [ZX Spectrum ROM Subroutines](https://skoolkid.github.io/rom/maps/routines.html)
 * [ZX Spectrum Assembler Programming Tutorial Series](https://www.youtube.com/playlist?list=PLO_DS4Ra9jOooo0tFaLq-BXa24iPWkJJ7) : A really nice, slow paced and clear  step by step walk through of proamming the Spectrum Z80 in Assembly Language.
+* [DeZog Detailed Reference](https://github.com/maziac/DeZog/blob/main/documentation/Usage.md) - really read this in detail!
+
 ## Credits
 
 Example code copied from DeZog then modified by Tim.
