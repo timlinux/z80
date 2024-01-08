@@ -73,6 +73,13 @@ That will open the emulator in debug mode:
 ![Run task](img/zesarux.png)
 
 
+You can verify it is running like this:
+
+```
+sudo lsof -i -P -n | grep LISTEN | grep zesarux
+zesarux   190028 timlinux    8u  IPv4 1826951      0t0  TCP *:10000 (LISTEN)
+```
+
 
 
 ## Resources

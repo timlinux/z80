@@ -1,6 +1,12 @@
    DEVICE ZXSPECTRUM48
 
    org $8000
+
+; Needed for DeZog https://github.com/maziac/DeZog/blob/main/documentation/Usage.md#launchjson
+
+stack_bottom:   ; 100 bytes of stack
+    defs    100, 0
+
 start:
    jp print_hello
 
@@ -36,3 +42,6 @@ LENGTH      equ $ - start
    ; and navigate to the directory where the sna is
    ; then run it
    SAVESNA "hello.sna", start
+
+; Needed for dezog
+stack_top:
