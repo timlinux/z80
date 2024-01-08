@@ -81,6 +81,11 @@ zesarux   190028 timlinux    8u  IPv4 1826951      0t0  TCP *:10000 (LISTEN)
 ```
 
 
+Next you can set a break point in your code and then run it in the debugger by clicking the green triangle:
+
+![Run in debugger](img/debug.png)
+
+
 
 ## Resources
 
