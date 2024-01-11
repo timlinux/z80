@@ -48,6 +48,7 @@ In VSCode you need to install the extensions listed in the DeZog home page. Thes
 * [SNA File Viewer](https://marketplace.visualstudio.com/items?itemName=maziac.sna-fileviewer)
 * [Z80 Assembly](https://marketplace.visualstudio.com/items?itemName=Imanolea.z80-asm)
 * [Z80 Instruction Set](https://marketplace.visualstudio.com/items?itemName=maziac.z80-instruction-set)
+* [Z80 Assembler Tutorials and resources](https://www.chibiakumas.com/z80/ZXSpectrum.php) - fantastic resources for the hardware layout etc.
 
 📒 These are listed in .vscode/extensions.json so you should be prompted to install them when you open this project in VSCode.
 
