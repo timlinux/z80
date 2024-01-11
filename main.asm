@@ -1,47 +1,35 @@
    DEVICE ZXSPECTRUM48
 
-   org $8000
+   org $8000 ; lowest place in memory that we can place our code. We can use 32k from here.
 
 ; Needed for DeZog https://github.com/maziac/DeZog/blob/main/documentation/Usage.md#launchjson
-
-stack_bottom:   ; 100 bytes of stack
-    defs    100, 0
-
 start:
-   jp print_hello
+  ld a, 1+4+16+64
+  ld hl, $4000
+  ret
 
-; Character Codes
-ENTER       equ $0D
-
-; ROM routines
-ROM_CLS     equ $0DAF
-ROM_PRINT   equ $203C
-
-NUMBER_PRINT equ $1A1B
-
-hello:
-   db "Hello, World!", ENTER
-HELLO_LEN   equ $ - hello
-
-print_hello:
-    call ROM_CLS
-    ld a, 27
-    ld c, -2
-    sub a, c
-    ld bc, (a)
-    call NUMBER_PRINT
-    ret
-
-; Deployment
-LENGTH      equ $ - start
-
-   ; option 2: snapshot
+   ; 
    ; to run the SNA, open the zesarus emulator
    ; then press F5 
    ; choose 'smart load'
    ; and navigate to the directory where the sna is
    ; then run it
-   SAVESNA "hello.sna", start
+   SAVESNA "hello.sna", start ; label to start the programme running from
 
 ; Needed for dezog
+;===========================================================================
+; Stack.
+;===========================================================================
+
+
+; Stack: this area is reserved for the stack
+STACK_SIZE: equ 100    ; in words
+
+
+; Reserve stack space
+    defw 0  ; WPMEM, 2
+stack_bottom:
+    defs    STACK_SIZE*2, 0
 stack_top:
+    ;defw 0
+    defw 0  ; WPMEM, 2

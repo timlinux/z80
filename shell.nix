@@ -6,7 +6,7 @@ with pkgs;
 mkShell {
   buildInputs = [
     zesarux # zx spectrum emulator
-    fuse-emulator # another (nicer?) zx spectrum emulator
+    fuse-emulator # another (nicer?) zx spectrum emulator - does not work with dezog
     sjasmplus # assembly compiler
     vscode
   ];
