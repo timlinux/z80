@@ -9,6 +9,7 @@ mkShell {
     fuse-emulator # another (nicer?) zx spectrum emulator - does not work with dezog
     sjasmplus # assembly compiler
     vscode
+    lsof # for checking if zesarux port is allocated
   ];
   # DIRENV_LOG_FORMAT to reduce direnv verbosity
   # See https://github.com/direnv/direnv/issues/68#issuecomment-162639262
