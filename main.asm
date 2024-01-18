@@ -1,11 +1,36 @@
    DEVICE ZXSPECTRUM48
 
    org $8000 ; lowest place in memory that we can place our code. We can use 32k from here.
+ 
+   jp start
+
+string:
+  db "hello"
+
+STRING_LENGTH=5
+
+ROM_CLS     = $0DAF    ; ROM address for Clear Screen routine
+COLOR_ATTR  = $5800    ; start of the colour attribute memory
+ENTER       = $0D      ; Character code for the enter key
+BLACK_WHITE = $47      ; Black paper, white ink
 
 ; Needed for DeZog https://github.com/maziac/DeZog/blob/main/documentation/Usage.md#launchjson
 start:
-  ld a, 1+4+16+64
-  ld hl, $4000
+  im 1                 ; interrupt mode 1
+  call ROM_CLS         ; clear scree (extended immediate addressing)
+  ld hl, string        ; HL = address of string (register, extended immediate)
+  ld b, STRING_LENGTH  ; (register, immediate)
+loop:
+  ld a, (hl)           ; a gets byte at address hl (register, register indirect)
+  rst $10              ; print character code in A (modified page zero)
+  inc hl               ; incrememt HL to the address of the next chart (register)
+  dec b                ; decrement b (register)
+  jp nz, loop
+  ld a, ENTER
+  rst $10
+  
+
+ 
   ret
 
    ; 
