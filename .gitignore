@@ -2,3 +2,4 @@ tapes/*
 *.sla
 z80-sample-program
 Z80-Instructions.pdf
+.vscode-extensions
