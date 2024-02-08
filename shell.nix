@@ -10,6 +10,7 @@ mkShell {
     sjasmplus # assembly compiler
     vscode
     lsof # for checking if zesarux port is allocated
+    lima # for running vscode in a container and accessing via web browser
   ];
   # DIRENV_LOG_FORMAT to reduce direnv verbosity
   # See https://github.com/direnv/direnv/issues/68#issuecomment-162639262
