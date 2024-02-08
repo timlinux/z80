@@ -14,10 +14,48 @@ COLOR_ATTR  = $5800    ; start of the colour attribute memory
 ENTER       = $0D      ; Character code for the enter key
 BLACK_WHITE = $47      ; Black paper, white ink
 
+setpixel: ; input b= x coord, c = y coord
+  ld a,b
+  and $07
+  ld d,a 
+  ld l,b
+  srl l
+  srl l
+  srl l
+  ld a,c
+  and $07
+  or $40
+  ld h,a
+  ld a,c
+  and $38
+  sla a
+  sla a
+  or l
+  ld l,a
+  ld a,c
+  and $C0
+  srl a
+  srl a
+  srl a
+  or h
+  ld h,a
+  ld a,$00
+  scf
+
+sp_loop:
+  rra
+  dec d
+  jp p, sp_loop
+  or (hl)
+  ld (hl),a
+  ret
+
+
+
 ; Needed for DeZog https://github.com/maziac/DeZog/blob/main/documentation/Usage.md#launchjson
 start:
   im 1                 ; interrupt mode 1
-  call ROM_CLS         ; clear scree (extended immediate addressing)
+  call ROM_CLS         ; clear screen (extended immediate addressing)
   ld hl, string        ; HL = address of string (register, extended immediate)
   ld b, STRING_LENGTH  ; (register, immediate)
 loop:
@@ -28,6 +66,16 @@ loop:
   jp nz, loop
   ld a, ENTER
   rst $10
+  ld b,10
+  ld c,10
+drawloop:
+  jp setpixel
+  dec c
+  dec b
+  jp nz, drawloop
+
+  
+
   
 
  
