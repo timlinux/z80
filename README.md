@@ -220,7 +220,7 @@ Next you can set a break point in your code and then run it in the debugger by c
 * [ZX Spectrum ROM Subroutines](https://skoolkid.github.io/rom/maps/routines.html)
 * [ZX Spectrum Assembler Programming Tutorial Series](https://www.youtube.com/playlist?list=PLO_DS4Ra9jOooo0tFaLq-BXa24iPWkJJ7) : A really nice, slow paced and clear  step by step walk through of proamming the Spectrum Z80 in Assembly Language.
 * [DeZog Detailed Reference](https://github.com/maziac/DeZog/blob/main/documentation/Usage.md) - really read this in detail!
-* [ZXLoad](https://loadzx.com) - online musuem dedicated to the ZX Spectrum
+* [ZXLoad](https://loadzx.com) - online museum dedicated to the ZX Spectrum
 
 ## Credits
 
