@@ -9,8 +9,8 @@ compile: screen_draw.asm
 
 # Run the compiled program
 run: screen_draw.sna
-	@echo "Running screen_draw.sna in zesarux..."
-	zesarux screen_draw.sna
+	@echo "Running screen_draw.sna in fuse..."
+	fuse --auto-load --full-screen --tape screen_draw.sna
 
 # Clean compiled files
 clean:

@@ -6,12 +6,32 @@
 
         ORG 0x8000      ; Start program at 32768
 
+hello: DEFB "hello"
+hello_len = 5
+
+print_string:
+        ; print hello message
+        LD DE, hello
+        LD C, hello_len
+print_loop:
+        LD A, (DE)
+        CALL 0x10A8       ; Call ROM routine to print character in A
+        INC DE
+        DEC C
+        CALL delay_loop
+        JP NZ, print_loop
+        CALL delay_loop
+        RET
+
 start:
+        CALL print_string
+        CALL delay_loop
+        ; draw pattern to screen
         LD HL, 0x4000   ; Point HL to start of screen memory
         LD BC, 6144     ; Set counter to 6144 bytes (screen size)
-        LD A, 0x55      ; Load pattern 01010101 into A
 
 fill_loop:
+        LD A, 0x55      ; Load pattern 01010101 into A
         LD (HL), A      ; Store pattern at memory location pointed by HL
         INC HL          ; Move to next memory location
         DEC BC          ; Decrement counter
@@ -35,5 +55,5 @@ delay_inner:
 
 ; now save the program to a file
 ; using ZX Spectrum tape format (SNA)
-SAVE "screen_draw.sna", start, 0x8000 + 6144 - 1
+        SAVESNA "screen_draw.sna", start
         END start
