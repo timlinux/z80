@@ -1,12 +1,12 @@
 let
-  nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/9665f56e3b9c0bfaa07ca88b03b62bb277678a23.tar.gz";
+  nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/632f04521e847173c54fa72973ec6c39a371211c.tar.gz";
   pkgs = import nixpkgs { config = { }; overlays = [ ]; };
 in
 with pkgs;
 mkShell {
   buildInputs = [
     zesarux # zx spectrum emulator
-    fuse-emulator # another (nicer?) zx spectrum emulator - does not work with dezog
+    #fuse-emulator # another (nicer?) zx spectrum emulator - does not work with dezog
     sjasmplus # assembly compiler
     vscode
     lsof # for checking if zesarux port is allocated

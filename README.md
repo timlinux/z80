@@ -1,7 +1,5 @@
 # Nix shell environment for ZX80 / ZX Spectrum
 
-
-
 You can do lots of different things with this environment. The main activities I
 am concerned with are:
 
@@ -10,7 +8,6 @@ am concerned with are:
 
 
 ## Running tapes
-
 
 You can also download other tapes from https://worldofspectrum.org/
 
@@ -33,125 +30,16 @@ There are basically 3 different ZXSpectrum emulators you can use:
 * zesarux - which is bundled in this nix shell environment
 * cspect - I've never tried to use that -  and there is no nix package for it.
 
-
-## Running under lima
-
-There is a bug that prevents DeZog running properly under Nixos which for now means 
-we need to use an alternative workflow.
-
-### 🪛Use case:
-
-I want to use DeZog but the extension does not work on NixOS (no idea why) so I
-thought I could use VSCode inside an Ubuntu container, connecting to it via my
-web browser
-
-### 🔑Key Technologies:
-
-* [Lima](https://github.com/lima-vm/lima) : Provides a seamless WSL like experience for MacOS and Linux
-* [Code Server](https://github.com/coder/code-server) : Provides a deployment of VSCode that runs as over the web
-* [DeZog](https://github.com/maziac/DeZog) : A Z80 Assembler dev kit. The specific use case I was applying this to - the workflow can be used for any use case though.
-
-### 🏆️Outcome
-
-Here we can see VSCode running in my browser, connected to an ubuntu VM in Lima.
-
-![](img/code-server.png)
-
-### 📝 Setup
-
-#### Lima
-
-Lima will create a VM, mount your home dir in it and forward any ports created in it out to your host.
-
-```
-nix-shell -p lima
-```
-
-Or add it to your shell.nix
-
-The first time you use Lima you need to initialise it, set up a vm etc:
-
-```
-limactl start default
-limactl bash
-# You are now in ubuntu
-exit
-```
-
-### Code Server
-
-Now we can install VSCode
-
-```
-limactl bash
-curl -fsSL https://code-server.dev/install.sh | sh
-code-server
-```
-
-After which you should see something like this in your shell:
-
-```
-timlinux@lima-default:/home/timlinux$ code-server
-[2024-02-07T20:48:10.772Z] info  Wrote default config file to /home/timlinux.linux/.config/code-server/config.yaml
-[2024-02-07T20:48:11.144Z] info  code-server 4.21.0 84ca27278b68150e22d25ec9183a4835239b6e44
-[2024-02-07T20:48:11.145Z] info  Using user-data-dir /home/timlinux.linux/.local/share/code-server
-[2024-02-07T20:48:11.161Z] info  Using config file /home/timlinux.linux/.config/code-server/config.yaml
-[2024-02-07T20:48:11.161Z] info  HTTP server listening on http://127.0.0.1:8080/
-[2024-02-07T20:48:11.161Z] info    - Authentication is enabled
-[2024-02-07T20:48:11.161Z] info      - Using password from /home/timlinux.linux/.config/code-server/config.yaml
-[2024-02-07T20:48:11.161Z] info    - Not serving HTTPS
-[2024-02-07T20:48:11.161Z] info  Session server listening on /home/timlinux.linux/.local/share/code-server/code-server-ipc.sock
-[20:54:03]
-```
-
-Opening the link on port 8080 will take you to the VSCode instance
-
-### Logging in to Code Server
-
-You need to get the password placed in the ``/home/timlinux.linux/.config/code-server/config.yaml``. Open another terminal tab then do this:
-
-```
-lima bash
-cat /home/timlinux.linux/.config/code-server/config.yaml
-```
-
-![](img/code-server-config.png)
-
-Use the password listed there to open your VSCode
-
-### Issues with VSCode extensions
-
-Some extensions may not work or be available in the VSCode extension manager. You can install extensions manually by downloading them e.g. from the DeZog site and then using the manual install option.
-
-### Sjasmplus
-
-This is specific to dezog: I had to get sjasmplus installed like this:
-
-```
- git clone https://github.com/z00m128/sjasmplus.git
- cd sjasmplus/
- sudo apt install cmake build-essential
- git submodule init
- git submodule update
- mkdir build
- cd build
- cmake ..
- make
- sudo make install
- which sjasmplus
-```
-
-After doing that the sjasmplus task in vscode will work if it can write to the folder.
-
-
-
-
-
-
 ## Running natively under Nixos
 
-📒 THESE INSTRUCTIONS WON'T WORK - DEZOG DOES NOT WORK ON VSCODE IN NIXOS
-See : https://github.com/maziac/DeZog/issues/123
+📒 Note:
+
+> In older versions I had issues running Dezog under nixos - 
+> see the last section of this document if that is the case for 
+> you for an alternative approach to setting up your environment
+> using Lima.
+>
+> See : https://github.com/maziac/DeZog/issues/123
 
 
 
@@ -229,3 +117,142 @@ This README and shell.nix by Tim.
 
 Tim Sutton
 Jan 2024
+
+
+
+Deprecated notes in case you cannot run it under NixOS (Works for me as of Nix 24.11)
+
+
+## Running under lima
+
+There was a bug that prevents DeZog running properly under Nixos which means 
+we need to also be able to use an alternative workflow.
+
+### 🪛Use case:
+
+I want to use DeZog but the extension does not work on NixOS (no idea why) so I
+thought I could use VSCode inside an Ubuntu container, connecting to it via my
+web browser
+
+### 🔑Key Technologies:
+
+* [Lima](https://github.com/lima-vm/lima) : Provides a seamless WSL like experience for MacOS and Linux
+* [Code Server](https://github.com/coder/code-server) : Provides a deployment of VSCode that runs as over the web
+* [DeZog](https://github.com/maziac/DeZog) : A Z80 Assembler dev kit. The specific use case I was applying this to - the workflow can be used for any use case though.
+
+### 🏆️Outcome
+
+Here we can see VSCode running in my browser, connected to an ubuntu VM in Lima.
+
+![](img/code-server.png)
+
+### 📝 Setup
+
+#### Lima
+
+Lima will create a VM, mount your home dir in it and forward any ports created in it out to your host.
+
+```
+nix-shell -p lima
+```
+
+Or add it to your shell.nix
+
+The first time you use Lima you need to initialise it, set up a vm etc:
+
+```
+limactl start default
+limactl bash
+# You are now in ubuntu
+exit
+```
+
+## Mounting the z80 folder in Lima
+
+The home dir from your user will be read only. That will mean we cannot commit changes etc.
+
+So edit ~/.lima/default/lima.yaml and add an entry like this:
+
+```
+  - location: "/home/timlinux/dev/z80"
+  # 🟢 Builtin default: false
+  # 🔵 This file: true (only for "/tmp/lima")
+  writable: true
+```
+Now stop and start lima:
+
+
+```
+limactl stop default
+limactl start default
+```
+
+
+### Code Server
+
+Now we can install VSCode
+
+```
+limactl bash
+curl -fsSL https://code-server.dev/install.sh | sh
+code-server
+```
+
+After which you should see something like this in your shell:
+
+```
+timlinux@lima-default:/home/timlinux$ code-server
+[2024-02-07T20:48:10.772Z] info  Wrote default config file to /home/timlinux.linux/.config/code-server/config.yaml
+[2024-02-07T20:48:11.144Z] info  code-server 4.21.0 84ca27278b68150e22d25ec9183a4835239b6e44
+[2024-02-07T20:48:11.145Z] info  Using user-data-dir /home/timlinux.linux/.local/share/code-server
+[2024-02-07T20:48:11.161Z] info  Using config file /home/timlinux.linux/.config/code-server/config.yaml
+[2024-02-07T20:48:11.161Z] info  HTTP server listening on http://127.0.0.1:8080/
+[2024-02-07T20:48:11.161Z] info    - Authentication is enabled
+[2024-02-07T20:48:11.161Z] info      - Using password from /home/timlinux.linux/.config/code-server/config.yaml
+[2024-02-07T20:48:11.161Z] info    - Not serving HTTPS
+[2024-02-07T20:48:11.161Z] info  Session server listening on /home/timlinux.linux/.local/share/code-server/code-server-ipc.sock
+[20:54:03]
+```
+
+Opening the link on port 8080 will take you to the VSCode instance
+
+### Logging in to Code Server
+
+You need to get the password placed in the ``/home/timlinux.linux/.config/code-server/config.yaml``. Open another terminal tab then do this:
+
+```
+lima bash
+cat /home/timlinux.linux/.config/code-server/config.yaml
+```
+
+![](img/code-server-config.png)
+
+Use the password listed there to open your VSCode
+
+### Issues with VSCode extensions
+
+Some extensions may not work or be available in the VSCode extension manager. You can install extensions manually by downloading them e.g. from the DeZog site and then using the manual install option.
+
+### Sjasmplus
+
+This is specific to dezog: I had to get sjasmplus installed like this:
+
+```
+ git clone https://github.com/z00m128/sjasmplus.git
+ cd sjasmplus/
+ sudo apt install cmake build-essential
+ git submodule init
+ git submodule update
+ mkdir build
+ cd build
+ cmake ..
+ make
+ sudo make install
+ which sjasmplus
+```
+
+After doing that the sjasmplus task in vscode will work if it can write to the folder.
+
+
+
+

@@ -5,7 +5,7 @@
    jp start
 
 string:
-  db "hello"
+  db "bello"
 
 STRING_LENGTH=5
 
