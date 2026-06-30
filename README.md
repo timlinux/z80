@@ -1,28 +1,141 @@
 # Nix shell environment for ZX80 / ZX Spectrum
 
-You can do lots of different things with this environment. The main activities I
-am concerned with are:
+A reproducible dev environment for writing Z80 assembly that targets the
+ZX Spectrum 48K, plus a tape archive for running vintage software.
 
-1. Running tapes (ROMS) for old games etc.
-2. Writing and running programs in Z80 assembler.
+Two activities are supported:
 
+1. **Writing and running your own programs in Z80 assembler** (the main use case).
+2. **Running existing tapes** (games, demos, etc.) from `tapes/`.
 
-## Running tapes
+The flake provides `sjasmplus` (assembler), `fuse` and `zesarux` (emulators), a
+suite of `nix run` helper apps, a Neovim `which-key` menu under `<leader>p`,
+and a `scripts/z80-new-program` scaffolder that drops a heavily-commented
+template into a new folder.
 
-You can also download other tapes from https://worldofspectrum.org/
+> 📚 Everything in this repo is written for **relearning** Z80. Templates,
+> Makefiles, and inline comments lean towards "explain it like 1982" rather
+> than "fit on one line." If you spot something underexplained, raise an issue.
 
-To run a tape, download it from the site above, unzip it in e.g. the tapes folder and then do:
+---
 
+## Quick start — building and running your own program
+
+### From the shell (via the flake)
+
+Drop into the dev shell once per terminal:
+
+```bash
+direnv allow            # auto-enters the flake on cd
+# …or:
+nix develop
 ```
-zesarux tapes/Con-Quest.tap/CON-QUES.TAP
+
+Then:
+
+```bash
+# Scaffold a new program with the heavily-commented template:
+nix run .#new -- pong
+
+# Edit it:
+nvim pong/main.asm
+
+# Assemble + run instantly (SNA snapshot, sub-second boot):
+nix run .#run -- pong/main.asm
+
+# Or the authentic LOAD "" tape experience:
+nix run .#run -- pong/pong.tap
+
+# Or simply, from inside the program's dir:
+cd pong && make            # assemble + run via SNA
+cd pong && make run-tap    # run via tape autoload
+cd pong && make debug      # ZEsarUX with ZRCP on port 10000 (for DeZog)
 ```
 
-## Z80 Assembly Language Coding 
+### From Neovim (which-key menu under `<leader>p`)
 
-See  https://github.com/maziac/DeZog#dezog for how to work with Z80 assembler in vscode.
+| Key | Action |
+| --- | --- |
+| `<leader>pc` | Compile the current `.asm` file |
+| `<leader>pr` | Build & run (smart: prefers `.sna`) |
+| `<leader>pf` | Force run in FUSE |
+| `<leader>pz` | Force run in ZEsarUX |
+| `<leader>pd` | Debug — ZEsarUX with ZRCP on port 10000 |
+| `<leader>pn` | Scaffold a new program |
+| `<leader>pp` | Pick & open an existing program |
+| `<leader>pt` | Browse `tapes/` and load one |
+| `<leader>ph` | Help for the instruction under the cursor |
+| `<leader>po` | Open reference documentation |
 
-The hello example here is copied from that site and adapted to work out the box
-with this setup.
+These are wired in `.nvim.lua` / `.exrc` and use `which-key.nvim` when present.
+The Lua module hangs off `_G.Z80Dev`, so you can also call e.g.
+`:lua Z80Dev.build_and_run()` from anywhere.
+
+### SNA vs TAP — why two outputs from a single source
+
+The template's `main.asm` ends with:
+
+```asm
+EMPTYTAP "name.tap"
+SAVETAP  "name.tap", BASIC, "name", basic_loader, BASIC_LEN, 10
+SAVETAP  "name.tap", CODE,  "name", start, PROG_LEN, start
+SAVESNA  "name.sna", start
+```
+
+so one `sjasmplus` pass emits both files. They serve different jobs:
+
+* **`name.sna` — full 48K snapshot.** The emulator restores memory, registers,
+  and the program counter, then literally resumes execution at `start`. Comes
+  up in well under a second — the right choice while you're iterating.
+* **`name.tap` — a self-running tape.** Two blocks: a tiny BASIC loader (line
+  10, autostart line set in the header) and the code block. The BASIC line
+  is the historical Spectrum trick:
+
+  ```basic
+  10 CLEAR 32767 : LOAD "" CODE : RANDOMIZE USR 32768
+  ```
+
+  `CLEAR 32767` reserves the memory above which our code sits; `LOAD "" CODE`
+  pulls in the next tape block (the binary); `RANDOMIZE USR 32768` jumps into
+  it. This is what every commercial cassette in 1982 was doing.
+
+The run scripts default to the `.sna` path — that's the development fast
+lane. Reach for the `.tap` path (`make run-tap`) when you want the authentic
+loading screen, or when you're debugging the BASIC loader itself.
+
+### Gotchas this project already works around
+
+* **`fuse` + host `LD_LIBRARY_PATH`** — if your shell exports paths to
+  `alsa` / `pipewire` libs built against a newer glibc than the nix-store
+  fuse expects, fuse aborts at startup with
+  `fuse: ... version 'GLIBC_ABI_DT_X86_64_PLT' not found ...`. Every
+  emulator-launching helper in this repo runs `env -u LD_LIBRARY_PATH fuse`
+  to dodge it.
+* **`fuse` + missing audio** — the dev shell typically has no working
+  ALSA backend. Every launcher passes `--no-sound` so you don't get a wall
+  of ALSA warnings on each run.
+* **`fuse --auto-load` + a `CODE`-only tape** — fuse types `LOAD ""` for you
+  but the Spectrum ROM stops at the `K` cursor because there's no BASIC
+  block to autostart. The template's BASIC autostart loader is what makes
+  `make run-tap` actually run your code.
+
+## Running existing tapes
+
+Drop a tape file into `tapes/` (download from
+[World of Spectrum](https://worldofspectrum.org/) or similar):
+
+```bash
+nix run .#tapes                              # list everything in tapes/
+nix run .#tapes -- tapes/MyGame/MYGAME.TAP   # run a specific one
+```
+
+Or from Neovim: `<leader>pt` opens a picker.
+
+## Legacy: VS Code + DeZog workflow
+
+The repo originally targeted [DeZog](https://github.com/maziac/DeZog) in
+VS Code. That workflow still works — `make debug` (or `<leader>pd`) launches
+ZEsarUX with the ZRCP debug protocol on port 10000, which DeZog connects to.
 
 There are basically 3 different ZXSpectrum emulators you can use:
 

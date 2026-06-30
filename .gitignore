@@ -4,3 +4,16 @@ z80-sample-program
 Z80-Instructions.pdf
 .vscode-extensions
 *.sna
+*.tap
+*.nex
+
+# Build artifacts
+*.sld
+*.lst
+.tmp/
+
+# Claude Code
+PROMPT.log
+
+# Neovim
+.nvim-session.vim

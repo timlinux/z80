@@ -1,22 +1,22 @@
-# Makefile for Z80 screen draw program
+# Makefile for screen-draw
+NAME = screen_draw
+ASM = screen_draw.asm
 
-# Default target
-all: run
+all: compile
 
-# Compile the assembly file
-compile: screen_draw.asm
-	sjasmplus screen_draw.asm
+compile: $(ASM)
+	sjasmplus --fullpath --sld=$(NAME).sld $(ASM)
 
-# Run the compiled program
-run: screen_draw.sna
-	@echo "Running screen_draw.sna in fuse..."
-	fuse --auto-load --full-screen --tape screen_draw.sna
+run: compile
+	fuse --full-screen --graphics-filter 4x --auto-load --tape $(NAME).tap
 
-# Clean compiled files
+debug: compile
+	zesarux --noconfigfile --machine 48k \
+		--enable-remoteprotocol \
+		--disable-autoframeskip \
+		--tape $(NAME).tap
+
 clean:
-	rm -f screen_draw.sna
+	rm -f *.tap *.sna *.sld *.lst
 
-# Force rebuild
-rebuild: clean all
-
-.PHONY: all compile run clean rebuild
+.PHONY: all compile run debug clean

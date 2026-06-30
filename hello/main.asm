@@ -5,7 +5,7 @@
    jp start
 
 string:
-  db "bello"
+  db "Tim woz here"
 
 STRING_LENGTH=5
 
@@ -74,11 +74,8 @@ drawloop:
   dec b
   jp nz, drawloop
 
+  ; render a line 100 px long
   
-
-  
-
- 
   ret
 
    ; 

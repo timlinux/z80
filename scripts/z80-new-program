@@ -1,0 +1,320 @@
+#!/usr/bin/env bash
+# Scaffold a new Z80 / ZX Spectrum assembly program in its own subfolder.
+# Made with love by Kartoza | https://kartoza.com
+#
+# What you get:
+#   <name>/main.asm   - heavily-commented entry point with print loop,
+#                       BASIC autostart tape loader, and SNA snapshot output
+#   <name>/Makefile   - compile / run / run-tap / debug / clean targets
+#
+# Usage:
+#   nix run .#new -- my-program
+#   scripts/z80-new-program my-program
+#
+set -e
+
+if [[ -z "$1" ]]; then
+	echo -n "Program name: "
+	read -r NAME
+else
+	NAME="$1"
+fi
+
+# Sanitize: lowercase, spaces → hyphens, strip non-alphanumeric/hyphen
+NAME=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+if [[ -z "$NAME" ]]; then
+	echo "Error: Invalid name"
+	exit 1
+fi
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+DIR="$ROOT/$NAME"
+if [[ -d "$DIR" ]]; then
+	echo "Error: Directory '$NAME' already exists"
+	exit 1
+fi
+
+# ZX Spectrum tape header names are max 10 chars (padded with spaces by the ROM).
+SHORT_NAME="${NAME:0:10}"
+
+mkdir -p "$DIR"
+
+# ============================================================================
+# main.asm template
+# ============================================================================
+# Variables expanded by this here-doc:
+#   $NAME        - the kebab-case program / output filename
+#   $SHORT_NAME  - 10-char tape-header name
+# `\$8000` etc. are escaped so the dollar reaches the file verbatim.
+cat > "$DIR/main.asm" << EOF
+; ============================================================================
+; $NAME - A ZX Spectrum Z80 assembly program
+; Made with love by Kartoza | https://kartoza.com
+; ============================================================================
+;
+;                              QUICK START
+;
+;   make            assemble + run instantly via SNA snapshot in FUSE
+;   make run-tap    run via the authentic LOAD "" tape experience
+;   make debug      ZEsarUX with ZRCP remote-debug on port 10000
+;   make clean      remove build artefacts
+;
+;   Or from the project root, via the flake:
+;     nix run .#run -- $NAME/main.asm
+;
+; ----------------------------------------------------------------------------
+;                  WHAT THIS PROGRAM DEMONSTRATES
+; ----------------------------------------------------------------------------
+;
+;  - A minimal ZX Spectrum 48K program assembled at \$8000 (32768).
+;  - Calling a ROM routine (clear screen) with CALL.
+;  - Printing a string by looping RST \$10 (the ROM's "print A as a char"
+;    entry point) over a buffer of bytes.
+;  - Producing TWO emulator-ready outputs from a single source file:
+;
+;       .sna  =  full 48K snapshot. Restores RAM + registers + PC, so the
+;                emulator literally resumes execution at our 'start' label
+;                the instant it boots. This is the fast path for development.
+;
+;       .tap  =  a tape image with TWO blocks: a tiny BASIC program that
+;                auto-runs on load, and the machine-code block it loads.
+;                The BASIC line is the historical Spectrum trick:
+;                    10 CLEAR 32767 : LOAD "" CODE : RANDOMIZE USR 32768
+;                CLEAR reserves the memory above which our code lives,
+;                LOAD "" CODE pulls in the next tape block, and
+;                RANDOMIZE USR 32768 calls our entry point at \$8000.
+;                Use this when you want to feel the 1982 loading screen.
+;
+; ============================================================================
+
+	DEVICE ZXSPECTRUM48     ; Target a 48K Spectrum (the canonical machine).
+	ORG \$8000               ; \$8000 = 32768. ZX Spectrum 48K memory map:
+	                        ;   \$0000-\$3FFF  16K BASIC ROM (read-only)
+	                        ;   \$4000-\$57FF  6144 bytes screen bitmap
+	                        ;   \$5800-\$5AFF   768 bytes attribute (colour) map
+	                        ;   \$5B00-\$5BFF  printer buffer (free if no printer)
+	                        ;   \$5C00-\$5CB5  system variables (don't trample!)
+	                        ;   \$5CCB-\$FFFF  free RAM (BASIC heap + user code)
+	                        ; Sitting our code at \$8000 leaves a comfortable
+	                        ; 32K below for BASIC's own working space.
+
+; ============================================================================
+;                              ROM ROUTINES
+; ============================================================================
+; Subroutines built into the Spectrum's 16K ROM. We call them with CALL or RST.
+
+ROM_CLS    EQU \$0DAF       ; clear the upper screen, reset PAPER/INK attrs
+PRINT_CHAR EQU \$0010       ; RST \$10: print the character in A to the screen
+
+; ============================================================================
+;                              ENTRY POINT
+; ============================================================================
+;
+; After BASIC runs RANDOMIZE USR 32768 (or after the snapshot restores PC),
+; execution lands here at \$8000.
+;
+; Note we put DATA AFTER CODE, not before. Reason: SAVETAP CODE below saves
+; only the bytes from \`start\` onwards. If we declared \`message:\` BEFORE
+; \`start:\`, it would live OUTSIDE the saved range, and loading from tape
+; would leave uninitialised bytes there — RST \$10 would happily print them
+; as garbage. Keeping the string after the \`ret\` puts it inside the saved
+; CODE block, so tape and snapshot behave identically.
+
+start:
+	im 1                   ; interrupt mode 1 — the Spectrum's normal 50 Hz
+	                       ; ROM-handled maskable interrupt (keyboard scan, etc.)
+	call ROM_CLS           ; clear the screen via ROM
+	ld   hl, message       ; HL = pointer to the first byte of "Hello World"
+	ld   b,  MSG_LEN       ; B  = how many characters to print (loop counter)
+print_loop:
+	ld   a, (hl)           ; A = current character at HL
+	rst  \$10               ; ROM print: emit char in A to the current channel
+	inc  hl                ; advance to next character
+	djnz print_loop        ; DJNZ = "decrement B and jump if not zero" — the
+	                       ; classic Z80 one-instruction-counted loop. Only B,
+	                       ; never any other register.
+	ret                    ; return — for .tap: back to BASIC; for .sna: pops
+	                       ; the sentinel sjasmplus placed on the saved stack.
+
+; ─── data: the string we want to print ──────────────────────────────────────
+; Sits AFTER the code (see entry-point note above) so the SAVETAP CODE block
+; below covers it. The ZX Spectrum uses standard ASCII for printable letters
+; and digits, so "Hello World" maps to bytes \$48,\$65,\$6C,\$6C,\$6F,\$20,\$57,...
+message:
+	db "Hello World"
+message_end:
+MSG_LEN  EQU message_end - message    ; string length, computed at build time
+program_end:
+PROG_LEN EQU program_end - start      ; size of the code+data block on tape
+
+; ============================================================================
+;                       SELF-RUNNING TAPE BASIC LOADER
+; ============================================================================
+;
+; Commercial Spectrum tapes did this trick: ship a tiny BASIC program as the
+; first tape block, with the autostart line set in the tape header. The ROM's
+; LOAD routine then auto-RUNs it, and the BASIC program in turn loads the
+; binary block and jumps to it. The BASIC source we want to encode is:
+;
+;     10 CLEAR 32767 : LOAD "" CODE : RANDOMIZE USR 32768
+;
+; A Spectrum BASIC line on tape is laid out as:
+;   2 bytes  line number (BIG-endian — yes, weirdly, the only big-endian
+;            16-bit value in the entire system)
+;   2 bytes  line length, little-endian (the count of all the bytes that
+;            follow, up to and including the trailing \$0D ENTER marker)
+;   N bytes  tokens + literal characters + embedded numeric literals
+;   1 byte   \$0D ENTER terminating the line
+;
+; A "number" inside BASIC source is unusual: the digits are stored as plain
+; ASCII characters, immediately followed by a \$0E marker and a 5-byte
+; "floating-point form" of the same value. For 16-bit UNSIGNED integers the
+; FP form is 00 00 <lo> <hi> 00. Without the \$0E block, the interpreter
+; (which scans the FP form, not the digits) gets confused.
+;
+; BASIC keyword tokens we use here (the high-bit codes \$A5..\$FF):
+;   \$FD  CLEAR        \$EF  LOAD        \$AF  CODE
+;   \$F9  RANDOMIZE    \$C0  USR
+
+basic_loader:
+	db 0, 10                           ; line number 10 (BIG endian!)
+	dw line10_end - line10_body        ; line length — assembler computes it
+line10_body:
+	db \$FD                             ; CLEAR
+	db "32767"                         ; printable digits
+	db \$0E,\$00,\$00,\$FF,\$7F,\$00     ; ...followed by FP form of 32767
+	db ":"                             ; statement separator
+	db \$EF                             ; LOAD
+	db \$22,\$22                        ; ""  (no filename → next tape block)
+	db \$AF                             ; CODE
+	db ":"
+	db \$F9                             ; RANDOMIZE
+	db \$C0                             ; USR
+	db "32768"
+	db \$0E,\$00,\$00,\$00,\$80,\$00     ; FP form of 32768 (\$8000)
+	db \$0D                             ; ENTER (end of line)
+line10_end:
+basic_loader_end:
+BASIC_LEN EQU basic_loader_end - basic_loader
+
+; ============================================================================
+;                              EMITTED OUTPUTS
+; ============================================================================
+; sjasmplus pseudo-ops that write the actual files into the build dir.
+
+	EMPTYTAP "$NAME.tap"                                  ; start a fresh tape image
+	SAVETAP  "$NAME.tap", BASIC, "$SHORT_NAME", basic_loader, BASIC_LEN, 10
+	                                                      ; ^ first block = BASIC, autostart line 10
+	SAVETAP  "$NAME.tap", CODE,  "$SHORT_NAME", start, PROG_LEN, start
+	                                                      ; ^ second block = our machine code at \$8000
+
+	SAVESNA  "$NAME.sna", start                           ; full 48K snapshot, PC=start
+	END                                                   ; end of source
+
+; ============================================================================
+;                  STACK SETUP (used by DeZog debugger)
+; ============================================================================
+; DeZog needs a known stack area to inspect during debugging. This carves out
+; STACK_SIZE words of zeroed RAM and leaves the top sentinel-marked.
+STACK_SIZE: EQU 100
+stack_bottom:
+	DEFS STACK_SIZE*2, 0
+stack_top:
+	DEFW 0
+EOF
+
+# ============================================================================
+# Makefile template
+# ============================================================================
+# Sentinel PROGRAM_NAME is substituted after the heredoc so the heredoc itself
+# can stay verbatim (no shell-quoting headaches inside the recipe lines).
+cat > "$DIR/Makefile" << 'MKEOF'
+# ============================================================================
+# Makefile for a ZX Spectrum Z80 program (generated by z80-new-program)
+# ============================================================================
+#
+# Targets:
+#   make            same as `make run`
+#   make compile    assemble main.asm → NAME.tap (BASIC autostart) + NAME.sna
+#   make run        boot the SNA snapshot in FUSE (instant — no LOAD "")
+#   make run-tap    boot the TAP in FUSE with --auto-load (full 80s vibe)
+#   make debug      run in ZEsarUX with ZRCP debug on port 10000 (DeZog)
+#   make clean      remove all build artefacts
+#
+# Why two run targets?
+#   .sna is a 48K memory + register snapshot; the emulator resumes execution
+#   at our entry point immediately. Great for iteration.
+#   .tap is the authentic experience: the BASIC autostart loader runs
+#   `CLEAR 32767 : LOAD "" CODE : RANDOMIZE USR 32768`, which is what
+#   commercial software did in 1982.
+#
+# Why `env -u LD_LIBRARY_PATH`?
+#   The host shell often exports LD_LIBRARY_PATH entries (alsa, pipewire)
+#   built against a newer glibc than fuse expects, leading to:
+#     fuse: ... version `GLIBC_ABI_DT_X86_64_PLT' not found ...
+#   Unsetting it lets fuse use the nix-store glibc it was linked against.
+#
+# Why `--no-sound`?
+#   The dev shell typically has no working audio device; this just silences
+#   the noisy "couldn't open sound device 'default'" warnings on launch.
+# ============================================================================
+
+NAME = PROGRAM_NAME
+ASM  = main.asm
+
+# Default goal: compile (if needed) and run instantly.
+all: run
+
+# Assemble. sjasmplus emits both NAME.tap and NAME.sna in one pass thanks
+# to the SAVETAP / SAVESNA directives at the end of main.asm.
+compile: $(NAME).sna
+
+$(NAME).sna $(NAME).tap: $(ASM)
+	sjasmplus --fullpath --sld=$(NAME).sld $(ASM)
+
+# Fast path: boot the SNA snapshot directly. Comes up showing our output
+# in well under a second.
+run: compile
+	env -u LD_LIBRARY_PATH fuse --machine 48 --no-sound \
+		--graphics-filter 4x --snapshot $(NAME).sna
+
+# Authentic path: load the TAP via the BASIC autostart loader. You'll see
+# the classic "Program: NAME" + "Bytes: NAME" tape-loading sequence.
+run-tap: compile
+	env -u LD_LIBRARY_PATH fuse --machine 48 --no-sound \
+		--graphics-filter 4x --auto-load --tape $(NAME).tap
+
+# Run inside ZEsarUX with the ZX Remote Communication Protocol enabled.
+# Connect from VS Code / DeZog (or any zrcp client) on port 10000.
+debug: compile
+	zesarux --noconfigfile --machine 48k \
+		--enable-remoteprotocol --disable-autoframeskip \
+		--snap $(NAME).sna
+
+clean:
+	rm -f *.tap *.sna *.sld *.lst *.exp
+
+.PHONY: all compile run run-tap debug clean
+MKEOF
+
+sed -i "s/PROGRAM_NAME/$NAME/" "$DIR/Makefile"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Created new Z80 program: $NAME/"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "  Files:"
+echo "    $NAME/main.asm    - heavily-commented assembly source"
+echo "    $NAME/Makefile    - compile / run / run-tap / debug / clean"
+echo ""
+echo "  Next:"
+echo "    cd $NAME && make           # assemble + run via SNA (instant)"
+echo "    cd $NAME && make run-tap   # the authentic LOAD \"\" experience"
+echo ""
+echo "  Or from project root:"
+echo "    nix run .#run -- $NAME/main.asm"
+echo ""
+echo "  In Neovim:"
+echo "    nvim $NAME/main.asm    then <leader>pr to build & run"
+echo ""

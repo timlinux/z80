@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(asm-lsp:*)"
+      "Bash(asm-lsp:*)",
+      "Bash(nix develop:*)",
+      "Bash(nvim:*)",
+      "Bash(grep -r zesarux /home/timlinux/dev/z80 --include=*.md --include=*.sh --include=*.lua --include=*.vim --include=*.nix)",
+      "Bash(./scripts/z80-new-program test-pixels:*)",
+      "Bash(cd:*)",
+      "Bash(make compile *)",
+      "Bash(make run *)",
+      "Bash(grim /home/timlinux/dev/z80/learning/screenshots/hello-running-2.png)",
+      "Bash(sjasmplus --fullpath --sld=learning.sld main.asm)",
+      "Bash(env -u LD_LIBRARY_PATH fuse --help)",
+      "Bash(/home/timlinux/dev/z80/scripts/z80-new-program template-smoke-test *)",
+      "Bash(grim /home/timlinux/dev/z80/learning/screenshots/nix-run-fixed.png)",
+      "Bash(pkill -9 -f 'fuse --machine')"
     ],
     "deny": [],
     "ask": []
